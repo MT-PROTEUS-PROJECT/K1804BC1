@@ -1,10 +1,12 @@
 ﻿#include "K1804BC1.hpp"
 
 #include <bitset>
+#include <cmath>
 
 K1804BC1::K1804BC1() : PQ(0)
 {
     static_assert(sizeof(value_type) * 8 >= WORD_SIZE);
+    MOD = static_cast<uint64_t>(std::pow(2, WORD_SIZE));
     std::fill(RON.begin(), RON.end(), 0);
 }
 
@@ -29,9 +31,9 @@ VOID K1804BC1::setup(IINSTANCE* instance, IDSIMCKT* dsimckt)
     C0.init(_instance, "C0");
 
     PR0.init(_instance, "PR0");
-    PR3.init(_instance, "PR3");
+    PR3.init(_instance, "PR7");
     PQ0.init(_instance, "PQ0");
-    PQ3.init(_instance, "PQ3");
+    PQ3.init(_instance, "PQ7");
 }
 
 std::pair<K1804BC1::value_type, K1804BC1::value_type> K1804BC1::get_operands()
@@ -100,12 +102,12 @@ K1804BC1::value_type K1804BC1::get_result(value_type r, value_type s, bool& ovr,
     case 1:
         res = s - r - 1 + c0;
         sub = true;
-        r = (~r & ((1 << 4) - 1));
+        r = (~r & ((1 << WORD_SIZE) - 1));
         break;
     case 2:
         res = r - s - 1 + c0;
         sub = true;
-        s = (~s & ((1 << 4) - 1));
+        s = (~s & ((1 << WORD_SIZE) - 1));
         break;
     case 3:
         res = r | s;
@@ -131,17 +133,20 @@ K1804BC1::value_type K1804BC1::get_result(value_type r, value_type s, bool& ovr,
     uint8_t p = r | s;
     uint8_t g = r & s;
 
-    std::bitset<4> bp(p);
-    std::bitset<4> bg(g);
+    std::bitset<WORD_SIZE> bp(p);
+    std::bitset<WORD_SIZE> bg(g);
 
-    bool c1 = bg[0] || (bp[0] && _c0);
-    bool c2 = bg[1] || (bp[1] && c1);
-    bool c3 = bg[2] || (bp[2] && c2);
-    c4 = bg[3] || (bp[3] && c3);
-    res %= 16;
+    std::array<bool, WORD_SIZE> c;
+    c[0] = bg[0] || (bp[0] && _c0);
+    for (size_t i = 1; i < WORD_SIZE; ++i)
+    {
+        c[i] = bg[i] || (bp[i] && c[i - 1]);
+    }
+    c4 = c.back();
+    res %= MOD;
 
-    f3 = res >= 8;
-    ovr = (r < 8 && s < 8 && res >= 8 && !sub) || (r >= 8 && s >= 8 && res < 8 && !sub);
+    f3 = (res >= MOD / 2);
+    ovr = (r < MOD / 2 && s < MOD / 2 && res >= MOD / 2 && !sub) || (r >= MOD / 2 && s >= MOD / 2 && res < MOD / 2 && !sub);
     z = res == 0;
     return res;
 }
@@ -190,10 +195,10 @@ void K1804BC1::set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB
     auto m = vsm::model::make_number(_pins_M);
 
     auto pr0_prev = (RON[ronB] & (1u));
-    auto pr3_prev = (RON[ronB] & (1u << (WORD_SIZE - 1)));
+    auto pr7_prev = (RON[ronB] & (1u << (WORD_SIZE - 1)));
 
     auto pq0_prev = (PQ & (1u));
-    auto pq3_prev = (PQ & (1u << (WORD_SIZE - 1)));
+    auto pq7_prev = (PQ & (1u << (WORD_SIZE - 1)));
 
     bool right_shift = true;
     switch (out)
@@ -212,46 +217,46 @@ void K1804BC1::set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB
     }
 
     auto pr0_cur = (RON[ronB] & (1u));
-    auto pr3_cur = (RON[ronB] & (1u << (WORD_SIZE - 1)));
+    auto pr7_cur = (RON[ronB] & (1u << (WORD_SIZE - 1)));
 
     auto pq0_cur = (PQ & (1u));
-    auto pq3_cur = (PQ & (1u << (WORD_SIZE - 1)));
+    auto pq7_cur = (PQ & (1u << (WORD_SIZE - 1)));
 
     if (m == 1)
     {
         if (right_shift)
         {
-            pr3_cur = pr0_prev;
-            pq3_cur = pq0_prev;
+            pr7_cur = pr0_prev;
+            pq7_cur = pq0_prev;
         }
         else
         {
-            pr0_cur = pr3_prev;
-            pq0_cur = pq3_prev;
+            pr0_cur = pr7_prev;
+            pq0_cur = pq7_prev;
         }
     }
     else if (m == 2)
     {
         if (right_shift)
         {
-            pq3_cur = pr0_prev;
-            pr3_cur = pq0_prev;
+            pq7_cur = pr0_prev;
+            pr7_cur = pq0_prev;
         }
         else
         {
-            pq0_cur = pr3_prev;
-            pr0_cur = pq3_prev;
+            pq0_cur = pr7_prev;
+            pr0_cur = pq7_prev;
         }
     }
     else if (m == 3)
     {
         if (right_shift)
         {
-            pq3_cur = pr0_prev;
+            pq7_cur = pr0_prev;
         }
         else
         {
-            pr0_cur = pq3_prev;
+            pr0_cur = pq7_prev;
         }
     }
 
@@ -259,20 +264,20 @@ void K1804BC1::set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB
     RON[ronB] |= pr0_cur;
 
     RON[ronB] &= (1u << WORD_SIZE - 1) - 1;
-    if (pr3_cur)
+    if (pr7_cur)
         RON[ronB] |= (1u << WORD_SIZE - 1);
 
     PQ &= (1u << WORD_SIZE) - 2;
     PQ |= pq0_cur;
 
     PQ &= (1u << WORD_SIZE - 1) - 1;
-    if (pq3_cur)
+    if (pq7_cur)
         PQ |= (1u << WORD_SIZE - 1);
 
     PR0.set(time, 500, pr0_cur ? SHI : SLO);
-    PR3.set(time, 500, pr3_cur ? SHI : SLO);
+    PR3.set(time, 500, pr7_cur ? SHI : SLO);
     PQ0.set(time, 500, pq0_cur ? SHI : SLO);
-    PQ3.set(time, 500, pq3_cur ? SHI : SLO);
+    PQ3.set(time, 500, pq7_cur ? SHI : SLO);
 }
 
 VOID K1804BC1::simulate(ABSTIME time, DSIMMODES mode)

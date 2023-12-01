@@ -9,11 +9,14 @@ public:
 	static constexpr DWORD MODEL_KEY = 0x00000002;
 
 private:
-	static constexpr uint8_t WORD_SIZE = 4;
+	static constexpr uint8_t WORD_SIZE = 8;
+	static constexpr uint8_t ADDR_SIZE = 4;
 	static constexpr uint8_t RON_SIZE = 16;
+	uint64_t MOD;
 
 	using sel_pins = std::array<vsm::pin, 9>;
-	using ws_pins = std::array<vsm::pin, WORD_SIZE>;
+	using ws_pins = std::array<vsm::pin, ADDR_SIZE>;
+	using word_pins = std::array<vsm::pin, WORD_SIZE>;
 	using value_type = uint8_t;
 
 private:
@@ -23,8 +26,8 @@ private:
 	sel_pins _pins_I;
 	ws_pins _pins_A;
 	ws_pins _pins_B;
-	ws_pins _pins_D;
-	ws_pins _pins_Y;
+	word_pins _pins_D;
+	word_pins _pins_Y;
 	ws_pins _pins_F;
 	std::array<vsm::pin, 2> _pins_M;
 
@@ -46,7 +49,6 @@ public:
 	~K1804BC1() = default;
 
 private:
-	// direction: true - right, false - left
 	void set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB);
 
 	std::pair<value_type, value_type> get_operands();
