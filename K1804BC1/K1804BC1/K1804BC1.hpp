@@ -26,10 +26,16 @@ private:
 	ws_pins _pins_D;
 	ws_pins _pins_Y;
 	ws_pins _pins_F;
+	std::array<vsm::pin, 2> _pins_M;
 
 	vsm::pin OE;
 	vsm::pin CLK;
 	vsm::pin C0;
+
+	vsm::pin PR0;
+	vsm::pin PQ0;
+	vsm::pin PR3;
+	vsm::pin PQ3;
 
 public:
 	K1804BC1();
@@ -40,7 +46,10 @@ public:
 	~K1804BC1() = default;
 
 private:
+	// direction: true - right, false - left
+	void set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB);
+
 	std::pair<value_type, value_type> get_operands();
-	int get_result(value_type r, value_type s, bool &ovr, bool &c4, bool &f3, bool &z);
+	value_type get_result(value_type r, value_type s, bool &ovr, bool &c4, bool &f3, bool &z);
 	void write_result(ABSTIME time, value_type res, bool ovr, bool c4, bool f3, bool z);
 };
