@@ -6,7 +6,7 @@
 K1804BC1::K1804BC1() : PQ(0)
 {
     static_assert(sizeof(value_type) * 8 >= WORD_SIZE);
-    MOD = static_cast<uint64_t>(std::pow(2, WORD_SIZE));
+    MOD = static_cast<uint16_t>(std::pow(2, WORD_SIZE));
     std::fill(RON.begin(), RON.end(), 0);
 }
 
@@ -130,8 +130,8 @@ K1804BC1::value_type K1804BC1::get_result(value_type r, value_type s, bool& ovr,
 
     bool _c0 = (func == 1 || func == 2);
 
-    uint8_t p = r | s;
-    uint8_t g = r & s;
+    value_type p = r | s;
+    value_type g = r & s;
 
     std::bitset<WORD_SIZE> bp(p);
     std::bitset<WORD_SIZE> bg(g);
@@ -186,8 +186,8 @@ void K1804BC1::write_result(ABSTIME time, value_type res, bool ovr, bool c4, boo
 
     _pins_F[0].set(time, 500, z ? SHI : SLO);
     _pins_F[1].set(time, 500, f3 ? SHI : SLO);
-    _pins_F[2].set(time, 500, ovr ? SHI : SLO);
-    _pins_F[3].set(time, 500, c4 ? SHI : SLO);
+    _pins_F[2].set(time, 500, c4 ? SHI : SLO);
+    _pins_F[3].set(time, 500, ovr ? SHI : SLO);
 }
 
 void K1804BC1::set_shift(ABSTIME time, uint32_t out, uint32_t res, uint32_t ronB)

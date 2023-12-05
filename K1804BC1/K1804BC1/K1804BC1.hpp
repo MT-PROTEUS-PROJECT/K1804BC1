@@ -12,12 +12,12 @@ private:
 	static constexpr uint8_t WORD_SIZE = 8;
 	static constexpr uint8_t ADDR_SIZE = 4;
 	static constexpr uint8_t RON_SIZE = 16;
-	uint64_t MOD;
+	uint16_t MOD;
 
 	using sel_pins = std::array<vsm::pin, 9>;
 	using ws_pins = std::array<vsm::pin, ADDR_SIZE>;
 	using word_pins = std::array<vsm::pin, WORD_SIZE>;
-	using value_type = uint8_t;
+	using value_type = uint16_t;
 
 private:
 	std::array<value_type, RON_SIZE> RON;
